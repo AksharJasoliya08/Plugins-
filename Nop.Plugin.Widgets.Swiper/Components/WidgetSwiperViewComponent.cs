@@ -123,18 +123,18 @@ public class WidgetSwiperViewComponent : NopViewComponent
         if (sliderSettings == null || string.IsNullOrWhiteSpace(sliderSettings.Slides))
             return Content(string.Empty);
 
-        var model = new PublicInfoModel
+        var dbModel = new PublicInfoModel
         {
-            ShowNavigation = sliderSettings.ShowNavigation,
-            ShowPagination = sliderSettings.ShowPagination,
-            Autoplay = sliderSettings.Autoplay,
-            AutoplayDelay = sliderSettings.AutoplayDelay,
-            SliderFormat = sliderSettings.SliderFormat,
-            EnableProductMapping = sliderSettings.EnableProductMapping,
-            ShowProductName = sliderSettings.ShowProductName,
-            ShowProductPrice = sliderSettings.ShowProductPrice,
-            ShowShopNowButton = sliderSettings.ShowShopNowButton,
-            ButtonText = sliderSettings.ButtonText
+            ShowNavigation = slider.ShowNavigation,
+            ShowPagination = slider.ShowPagination,
+            Autoplay = slider.Autoplay,
+            AutoplayDelay = slider.AutoplayDelay,
+            SliderFormat = slider.SliderFormat,
+            EnableProductMapping = slider.EnableProductMapping,
+            ShowProductName = slider.ShowProductName,
+            ShowProductPrice = slider.ShowProductPrice,
+            ShowShopNowButton = slider.ShowShopNowButton,
+            ButtonText = slider.ButtonText ?? "Shop Now"
         };
 
         var slides = JsonConvert.DeserializeObject<List<Slide>>(
@@ -154,6 +154,7 @@ public class WidgetSwiperViewComponent : NopViewComponent
 
             var publicSlideModel = new PublicSlideModel
             {
+                Id = slide.Id,
                 PictureId = slide.PictureId,
                 PictureUrl = pictureUrl,
                 TitleText = slide.TitleText,
