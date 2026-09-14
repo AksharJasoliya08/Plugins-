@@ -85,6 +85,12 @@ public class WidgetSwiperController : BasePluginController
             Autoplay = sliderSettings.Autoplay,
             AutoplayDelay = sliderSettings.AutoplayDelay,
             LazyLoading = sliderSettings.LazyLoading,
+            SliderFormat = sliderSettings.SliderFormat,
+            EnableProductMapping = sliderSettings.EnableProductMapping,
+            ShowProductName = sliderSettings.ShowProductName,
+            ShowProductPrice = sliderSettings.ShowProductPrice,
+            ShowShopNowButton = sliderSettings.ShowShopNowButton,
+            ButtonText = sliderSettings.ButtonText,
             ActiveStoreScopeConfiguration = storeScope
         };
 
@@ -94,6 +100,12 @@ public class WidgetSwiperController : BasePluginController
             model.Autoplay_OverrideForStore = await _settingService.SettingExistsAsync(sliderSettings, x => x.Autoplay, storeScope);
             model.AutoplayDelay_OverrideForStore = await _settingService.SettingExistsAsync(sliderSettings, x => x.AutoplayDelay, storeScope);
             model.LazyLoading_OverrideForStore = await _settingService.SettingExistsAsync(sliderSettings, x => x.LazyLoading, storeScope);
+            model.SliderFormat_OverrideForStore = await _settingService.SettingExistsAsync(sliderSettings, x => x.SliderFormat, storeScope);
+            model.EnableProductMapping_OverrideForStore = await _settingService.SettingExistsAsync(sliderSettings, x => x.EnableProductMapping, storeScope);
+            model.ShowProductName_OverrideForStore = await _settingService.SettingExistsAsync(sliderSettings, x => x.ShowProductName, storeScope);
+            model.ShowProductPrice_OverrideForStore = await _settingService.SettingExistsAsync(sliderSettings, x => x.ShowProductPrice, storeScope);
+            model.ShowShopNowButton_OverrideForStore = await _settingService.SettingExistsAsync(sliderSettings, x => x.ShowShopNowButton, storeScope);
+            model.ButtonText_OverrideForStore = await _settingService.SettingExistsAsync(sliderSettings, x => x.ButtonText, storeScope);
         }
 
         return View("~/Plugins/Widgets.Swiper/Views/Configure.cshtml", model);
@@ -112,6 +124,12 @@ public class WidgetSwiperController : BasePluginController
         sliderSettings.Autoplay = model.Autoplay;
         sliderSettings.AutoplayDelay = model.AutoplayDelay;
         sliderSettings.LazyLoading = model.LazyLoading;
+        sliderSettings.SliderFormat = model.SliderFormat;
+        sliderSettings.EnableProductMapping = model.EnableProductMapping;
+        sliderSettings.ShowProductName = model.ShowProductName;
+        sliderSettings.ShowProductPrice = model.ShowProductPrice;
+        sliderSettings.ShowShopNowButton = model.ShowShopNowButton;
+        sliderSettings.ButtonText = model.ButtonText;
 
         /* We do not clear cache after each setting update.
          * This behavior can increase performance because cached settings will not be cleared 
@@ -121,6 +139,12 @@ public class WidgetSwiperController : BasePluginController
         await _settingService.SaveSettingOverridablePerStoreAsync(sliderSettings, x => x.Autoplay, model.Autoplay_OverrideForStore, storeScope, false);
         await _settingService.SaveSettingOverridablePerStoreAsync(sliderSettings, x => x.AutoplayDelay, model.AutoplayDelay_OverrideForStore, storeScope, false);
         await _settingService.SaveSettingOverridablePerStoreAsync(sliderSettings, x => x.LazyLoading, model.LazyLoading_OverrideForStore, storeScope, false);
+        await _settingService.SaveSettingOverridablePerStoreAsync(sliderSettings, x => x.SliderFormat, model.SliderFormat_OverrideForStore, storeScope, false);
+        await _settingService.SaveSettingOverridablePerStoreAsync(sliderSettings, x => x.EnableProductMapping, model.EnableProductMapping_OverrideForStore, storeScope, false);
+        await _settingService.SaveSettingOverridablePerStoreAsync(sliderSettings, x => x.ShowProductName, model.ShowProductName_OverrideForStore, storeScope, false);
+        await _settingService.SaveSettingOverridablePerStoreAsync(sliderSettings, x => x.ShowProductPrice, model.ShowProductPrice_OverrideForStore, storeScope, false);
+        await _settingService.SaveSettingOverridablePerStoreAsync(sliderSettings, x => x.ShowShopNowButton, model.ShowShopNowButton_OverrideForStore, storeScope, false);
+        await _settingService.SaveSettingOverridablePerStoreAsync(sliderSettings, x => x.ButtonText, model.ButtonText_OverrideForStore, storeScope, false);
 
         //now clear settings cache
         await _settingService.ClearCacheAsync();
@@ -155,6 +179,16 @@ public class WidgetSwiperController : BasePluginController
             VideoUrl = model.VideoUrl,
             ExternalVideoUrl = model.ExternalVideoUrl,
             PosterPictureId = model.PosterPictureId,
+            MobileVideoUrl = model.MobileVideoUrl,
+            MobilePosterPictureId = model.MobilePosterPictureId,
+            DesktopVideoUrl = model.DesktopVideoUrl,
+            DesktopPosterPictureId = model.DesktopPosterPictureId,
+            ProductId = model.ProductId,
+            Heading = model.Heading,
+            Subtitle = model.Subtitle,
+            CtaText = model.CtaText,
+            CtaUrl = model.CtaUrl,
+            TextAlignment = model.TextAlignment,
             VideoAutoplay = model.VideoAutoplay,
             VideoMuted = model.VideoMuted,
             VideoLoop = model.VideoLoop,
@@ -186,6 +220,8 @@ public class WidgetSwiperController : BasePluginController
                 {
                     var picture = item.PictureId > 0 ? await _pictureService.GetPictureByIdAsync(item.PictureId) : null;
                     var posterPicture = item.PosterPictureId > 0 ? await _pictureService.GetPictureByIdAsync(item.PosterPictureId) : null;
+                    var mobilePosterPicture = item.MobilePosterPictureId > 0 ? await _pictureService.GetPictureByIdAsync(item.MobilePosterPictureId) : null;
+                    var desktopPosterPicture = item.DesktopPosterPictureId > 0 ? await _pictureService.GetPictureByIdAsync(item.DesktopPosterPictureId) : null;
 
                     return new PublicSlideModel
                     {
@@ -198,6 +234,16 @@ public class WidgetSwiperController : BasePluginController
                         VideoUrl = item.VideoUrl,
                         ExternalVideoUrl = item.ExternalVideoUrl,
                         PosterPictureUrl = posterPicture != null ? (await _pictureService.GetPictureUrlAsync(posterPicture, 200)).Url : "",
+                        MobileVideoUrl = item.MobileVideoUrl,
+                        MobilePosterPictureUrl = mobilePosterPicture != null ? (await _pictureService.GetPictureUrlAsync(mobilePosterPicture, 200)).Url : "",
+                        DesktopVideoUrl = item.DesktopVideoUrl,
+                        DesktopPosterPictureUrl = desktopPosterPicture != null ? (await _pictureService.GetPictureUrlAsync(desktopPosterPicture, 200)).Url : "",
+                        ProductId = item.ProductId,
+                        Heading = item.Heading,
+                        Subtitle = item.Subtitle,
+                        CtaText = item.CtaText,
+                        CtaUrl = item.CtaUrl,
+                        TextAlignment = item.TextAlignment,
                         VideoAutoplay = item.VideoAutoplay,
                         VideoMuted = item.VideoMuted,
                         VideoLoop = item.VideoLoop,
@@ -268,6 +314,16 @@ public class WidgetSwiperController : BasePluginController
         slide.VideoUrl = model.VideoUrl;
         slide.ExternalVideoUrl = model.ExternalVideoUrl;
         slide.PosterPictureId = model.PosterPictureId;
+        slide.MobileVideoUrl = model.MobileVideoUrl;
+        slide.MobilePosterPictureId = model.MobilePosterPictureId;
+        slide.DesktopVideoUrl = model.DesktopVideoUrl;
+        slide.DesktopPosterPictureId = model.DesktopPosterPictureId;
+        slide.ProductId = model.ProductId;
+        slide.Heading = model.Heading;
+        slide.Subtitle = model.Subtitle;
+        slide.CtaText = model.CtaText;
+        slide.CtaUrl = model.CtaUrl;
+        slide.TextAlignment = model.TextAlignment;
         slide.VideoAutoplay = model.VideoAutoplay;
         slide.VideoMuted = model.VideoMuted;
         slide.VideoLoop = model.VideoLoop;

@@ -1,6 +1,21 @@
 ﻿@model PublicSlideModel
 
 @{
+    var isMobile = Context.Request.Headers["User-Agent"].ToString().Contains("Mobile");
+    
+    // Determine video URL based on device and availability
+    var effectiveVideoUrl = Model.ContentType switch
+    {
+        1 => isMobile && !string.IsNullOrEmpty(Model.MobileVideoUrl) ? Model.MobileVideoUrl : (!string.IsNullOrEmpty(Model.DesktopVideoUrl) ? Model.DesktopVideoUrl : Model.VideoUrl),
+        2 => Model.ExternalVideoUrl,
+        _ => null
+    };
+
+    // Determine poster URL based on device and availability
+    var effectivePosterUrl = isMobile && Model.MobilePosterPictureId > 0 
+        ? Model.MobilePosterPictureUrl 
+        : (Model.DesktopPosterPictureId > 0 ? Model.DesktopPosterPictureUrl : Model.PosterPictureUrl);
+
     void slideImage()
     {
         <img class="slider-img" src="@Model.PictureUrl" alt="@Model.AltText" title="@Model.TitleText" @(Model.LazyLoading ? "loading=lazy" : string.Empty) />
@@ -8,15 +23,14 @@
 
     void slideVideo()
     {
-        var videoUrl = Model.ContentType == 1 ? Model.VideoUrl : Model.ExternalVideoUrl;
-        var posterAttr = !string.IsNullOrEmpty(Model.PosterPictureUrl) ? $"poster=\"{Model.PosterPictureUrl}\"" : "";
+        var posterAttr = !string.IsNullOrEmpty(effectivePosterUrl) ? $"poster=\"{effectivePosterUrl}\"" : "";
         var autoplayAttr = Model.VideoAutoplay ? "autoplay" : "";
         var mutedAttr = Model.VideoMuted || Model.VideoAutoplay ? "muted" : "";
         var loopAttr = Model.VideoLoop ? "loop" : "";
         var controlsAttr = Model.VideoControls ? "controls" : "";
         
         <video class="slider-video" @posterAttr @autoplayAttr @mutedAttr @loopAttr @controlsAttr playsinline>
-            <source src="@videoUrl" type="@(Model.ContentType == 1 ? (Model.VideoUrl.EndsWith(".webm") ? "video/webm" : "video/mp4") : "video/mp4")" />
+            <source src="@effectiveVideoUrl" type="@(effectiveVideoUrl?.EndsWith(".webm") == true ? "video/webm" : "video/mp4")" />
             @T("Plugins.Widgets.Swiper.VideoNotSupported")
         </video>
         
@@ -25,54 +39,180 @@
             <div class="slide-description">@Model.Description</div>
         }
     }
+
+    void renderHeroContent()
+    {
+        <div class="hero-slide-content text-@Model.TextAlignment.ToLower()">
+            @if (!string.IsNullOrEmpty(Model.Heading))
+            {
+                <h2 class="hero-heading">@Model.Heading</h2>
+            }
+            @if (!string.IsNullOrEmpty(Model.Subtitle))
+            {
+                <p class="hero-subtitle">@Model.Subtitle</p>
+            }
+            @if (!string.IsNullOrEmpty(Model.Description))
+            {
+                <div class="hero-description">@Model.Description</div>
+            }
+            @if (!string.IsNullOrEmpty(Model.CtaText) && !string.IsNullOrEmpty(Model.CtaUrl))
+            {
+                <a href="@Model.CtaUrl" class="btn btn-primary hero-cta-btn">@Model.CtaText</a>
+            }
+        </div>
+    }
+
+    void renderProductCard()
+    {
+        <div class="product-card">
+            @if (Model.ContentType == 1 && !string.IsNullOrEmpty(Model.VideoUrl))
+            {
+                <div class="product-video-container">
+                    @{ slideVideo(); }
+                </div>
+            }
+            else if (Model.ProductThumbnailUrl != null)
+            {
+                <img src="@Model.ProductThumbnailUrl" alt="@Model.ProductName" class="product-thumbnail" />
+            }
+            
+            @if (Model.EnableProductMapping)
+            {
+                <div class="product-info">
+                    @if (Model.ShowProductName && !string.IsNullOrEmpty(Model.ProductName))
+                    {
+                        <h3 class="product-name">@Model.ProductName</h3>
+                    }
+                    @if (Model.ShowProductPrice && !string.IsNullOrEmpty(Model.ProductPrice))
+                    {
+                        <span class="product-price">@Model.ProductPrice</span>
+                    }
+                    @if (Model.ShowShopNowButton && !string.IsNullOrEmpty(Model.ProductUrl))
+                    {
+                        <a href="@Model.ProductUrl" class="btn btn-sm btn-primary shop-now-btn">@(string.IsNullOrEmpty(Model.ButtonText) ? T("Plugins.Widgets.Swiper.ShopNow").Text : Model.ButtonText)</a>
+                    }
+                </div>
+            }
+        </div>
+    }
+
+    void renderReelCard(int index)
+    {
+        <div class="reel-card" onclick="openReelsViewer(@index)">
+            @if (Model.ContentType == 1 && !string.IsNullOrEmpty(Model.VideoUrl))
+            {
+                <div class="reel-video-container">
+                    <video class="reel-video" @(!string.IsNullOrEmpty(effectivePosterUrl) ? $"poster=\"{effectivePosterUrl}\"" : "") muted loop playsinline>
+                        <source src="@effectiveVideoUrl" type="@(effectiveVideoUrl?.EndsWith(".webm") == true ? "video/webm" : "video/mp4")" />
+                    </video>
+                    <div class="reel-play-overlay">
+                        <i class="fas fa-play"></i>
+                    </div>
+                </div>
+            }
+            
+            @if (Model.EnableProductMapping)
+            {
+                <div class="reel-product-overlay">
+                    @if (Model.ShowProductName && !string.IsNullOrEmpty(Model.ProductName))
+                    {
+                        <span class="reel-product-name">@Model.ProductName</span>
+                    }
+                    @if (Model.ShowProductPrice && !string.IsNullOrEmpty(Model.ProductPrice))
+                    {
+                        <span class="reel-product-price">@Model.ProductPrice</span>
+                    }
+                    @if (Model.ShowShopNowButton && !string.IsNullOrEmpty(Model.ProductUrl))
+                    {
+                        <a href="@Model.ProductUrl" class="btn btn-sm btn-primary reel-shop-btn">@(string.IsNullOrEmpty(Model.ButtonText) ? T("Plugins.Widgets.Swiper.ShopNow").Text : Model.ButtonText)</a>
+                    }
+                </div>
+            }
+        </div>
+    }
 }
 
 <div class="swiper-slide">
-    @if (Model.ContentType == 0 && !string.IsNullOrEmpty(Model.PictureUrl))
+    @if (Model.SliderFormat == 1)
     {
-        // Image Slide
-        if (!string.IsNullOrEmpty(Model.LinkUrl))
+        // Full-Width Hero Video Slider
+        <div class="hero-slide">
+            @if (Model.ContentType == 0 && !string.IsNullOrEmpty(Model.PictureUrl))
+            {
+                <img class="hero-bg-image" src="@Model.PictureUrl" alt="@Model.AltText" />
+                <div class="hero-overlay"></div>
+                renderHeroContent();
+            }
+            else if ((Model.ContentType == 1 && !string.IsNullOrEmpty(Model.VideoUrl)) || (Model.ContentType == 2 && !string.IsNullOrEmpty(Model.ExternalVideoUrl)))
+            {
+                <video class="hero-bg-video" @(!string.IsNullOrEmpty(effectivePosterUrl) ? $"poster=\"{effectivePosterUrl}\"" : "") @(Model.VideoAutoplay ? "autoplay" : "") @(Model.VideoMuted || Model.VideoAutoplay ? "muted" : "") @(Model.VideoLoop ? "loop" : "") playsinline>
+                    <source src="@effectiveVideoUrl" type="@(effectiveVideoUrl?.EndsWith(".webm") == true ? "video/webm" : "video/mp4")" />
+                </video>
+                <div class="hero-overlay"></div>
+                renderHeroContent();
+            }
+        </div>
+    }
+    else if (Model.SliderFormat == 2)
+    {
+        // Product Video Carousel
+        renderProductCard();
+    }
+    else if (Model.SliderFormat == 3)
+    {
+        // Reels Video Slider
+        var slideIndex = ViewContext.ViewData["SlideIndex"] as int? ?? 0;
+        renderReelCard(slideIndex);
+    }
+    else
+    {
+        // Standard Mixed Image + Video Swiper
+        @if (Model.ContentType == 0 && !string.IsNullOrEmpty(Model.PictureUrl))
         {
-            <a href="@Model.LinkUrl" aria-label="@Model.AltText">
-                @{ slideImage(); }
-            </a>
-        }
-        else
-        {
-            slideImage();
-        }
+            // Image Slide
+            if (!string.IsNullOrEmpty(Model.LinkUrl))
+            {
+                <a href="@Model.LinkUrl" aria-label="@Model.AltText">
+                    @{ slideImage(); }
+                </a>
+            }
+            else
+            {
+                slideImage();
+            }
 
-        if (Model.LazyLoading)
-        {
-            <div class="swiper-lazy-preloader"></div>
+            if (Model.LazyLoading)
+            {
+                <div class="swiper-lazy-preloader"></div>
+            }
         }
-    }
-    else if (Model.ContentType == 1 && !string.IsNullOrEmpty(Model.VideoUrl))
-    {
-        // Uploaded Video Slide
-        if (!string.IsNullOrEmpty(Model.LinkUrl))
+        else if (Model.ContentType == 1 && !string.IsNullOrEmpty(Model.VideoUrl))
         {
-            <a href="@Model.LinkUrl" aria-label="@Model.TitleText" class="video-slide-link">
-                @{ slideVideo(); }
-            </a>
+            // Uploaded Video Slide
+            if (!string.IsNullOrEmpty(Model.LinkUrl))
+            {
+                <a href="@Model.LinkUrl" aria-label="@Model.TitleText" class="video-slide-link">
+                    @{ slideVideo(); }
+                </a>
+            }
+            else
+            {
+                slideVideo();
+            }
         }
-        else
+        else if (Model.ContentType == 2 && !string.IsNullOrEmpty(Model.ExternalVideoUrl))
         {
-            slideVideo();
-        }
-    }
-    else if (Model.ContentType == 2 && !string.IsNullOrEmpty(Model.ExternalVideoUrl))
-    {
-        // External Video URL Slide
-        if (!string.IsNullOrEmpty(Model.LinkUrl))
-        {
-            <a href="@Model.LinkUrl" aria-label="@Model.TitleText" class="video-slide-link">
-                @{ slideVideo(); }
-            </a>
-        }
-        else
-        {
-            slideVideo();
+            // External Video URL Slide
+            if (!string.IsNullOrEmpty(Model.LinkUrl))
+            {
+                <a href="@Model.LinkUrl" aria-label="@Model.TitleText" class="video-slide-link">
+                    @{ slideVideo(); }
+                </a>
+            }
+            else
+            {
+                slideVideo();
+            }
         }
     }
 </div>

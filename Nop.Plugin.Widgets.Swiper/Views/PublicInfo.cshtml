@@ -9,76 +9,130 @@
 
 @if (Model.Slides?.Any() == true)
 {
-    <div class="swiper nop-slider">
+    var sliderFormatClass = Model.SliderFormat switch
+    {
+        1 => "swiper-hero",
+        2 => "swiper-product-carousel",
+        3 => "swiper-reels",
+        _ => "nop-slider"
+    };
+
+    <div class="swiper @sliderFormatClass">
         <div class="swiper-wrapper">
+            @{
+                var slideIndex = 0;
+            }
             @foreach (var slide in Model.Slides)
             {
+                ViewData["SlideIndex"] = slideIndex;
                 @await Html.PartialAsync("~/Plugins/Widgets.Swiper/Views/_PublicInfo.Slide.cshtml", slide)
+                slideIndex++;
             }
         </div>
-        @if (Model.ShowPagination)
+        
+        @if (Model.SliderFormat != 3 && Model.ShowPagination)
         {
             <div class="swiper-pagination"></div>
         }
-        @if (Model.ShowNavigation)
+        
+        @if (Model.SliderFormat != 3 && Model.ShowNavigation)
         {
             <div class="swiper-button-prev"></div>
             <div class="swiper-button-next"></div>
         }
+        
+        @if (Model.SliderFormat == 3)
+        {
+            <div class="reels-progress-container"></div>
+        }
     </div>
+    
+    @if (Model.SliderFormat == 3)
+    {
+        @* Reels Popup Viewer *@
+        <div id="reels-viewer" class="reels-viewer-overlay" style="display:none;">
+            <div class="reels-viewer">
+                <button class="reels-close-btn" onclick="closeReelsViewer()">&times;</button>
+                <div class="reels-viewer-content">
+                    <div class="swiper reels-viewer-swiper">
+                        <div class="swiper-wrapper" id="reels-viewer-wrapper"></div>
+                    </div>
+                    <div class="reels-viewer-nav reels-prev">&#10094;</div>
+                    <div class="reels-viewer-nav reels-next">&#10095;</div>
+                </div>
+            </div>
+        </div>
+    }
 }
 
 <script asp-location="Footer">
-    var swiper6 = new Swiper(".nop-slider", {
-      autoHeight: true,
+    @(Model.SliderFormat switch
+    {
+        1 => @"// Hero Video Slider
+    var swiperHero = new Swiper('.swiper-hero', {
+        effect: 'fade',
         grabCursor: true,
-        effect: "fade",
-        lazy: true,
-        @if (Model.Autoplay)
-        {
-            <text>
-            autoplay: {
-                delay: @Model.AutoplayDelay
-            },
-            </text>
-        }
-        @if (Model.ShowPagination)
-        {
-            <text>
-            pagination: {
-                el: ".swiper-pagination",
-                clickable: true,
-            },
-            </text>
-        }
-        @if (Model.ShowNavigation)
-        {
-            <text>
-            navigation: {
-                nextEl: ".swiper-button-next",
-                prevEl: ".swiper-button-prev",
-            },
-            </text>
-        }
-        on: {
-            init: function () {
-                pauseAllVideosExcept(this.slides[this.activeIndex]);
-            },
-            slideChange: function () {
-                // Pause all videos first
-                pauseAllVideos();
-                // Play video in active slide if autoplay is enabled
-                var activeSlide = this.slides[this.activeIndex];
-                if (activeSlide) {
-                    playVideoInSlide(activeSlide);
-                }
+        autoHeight: false,
+        lazy: true,",
+        2 => @"// Product Video Carousel
+    var swiperProductCarousel = new Swiper('.swiper-product-carousel', {
+        slidesPerView: 1,
+        spaceBetween: 20,
+        grabCursor: true,
+        lazy: true,",
+        3 => @"// Reels Video Slider
+    var swiperReels = new Swiper('.swiper-reels', {
+        slidesPerView: 'auto',
+        spaceBetween: 15,
+        grabCursor: true,
+        lazy: true,",
+        _ => @"// Standard Slider
+    var swiperStandard = new Swiper('.nop-slider', {
+        autoHeight: true,
+        grabCursor: true,
+        effect: 'fade',
+        lazy: true,"
+    })
+    
+    @(Model.Autoplay ? $@"autoplay: {{
+        delay: {Model.AutoplayDelay}
+    }}," : "")
+    
+    @(Model.SliderFormat == 2 ? @"breakpoints: {
+        640: { slidesPerView: 2 },
+        768: { slidesPerView: 3 },
+        1024: { slidesPerView: 4 }
+    }," : "")
+    
+    @(Model.SliderFormat == 3 ? @"loop: true," : "")
+    
+    @(Model.ShowPagination && Model.SliderFormat != 3 ? $@"pagination: {{
+        el: '.swiper-pagination',
+        clickable: true,
+    }}," : "")
+    
+    @(Model.ShowNavigation && Model.SliderFormat != 3 ? $@"navigation: {{
+        nextEl: '.swiper-button-next',
+        prevEl: '.swiper-button-prev',
+    }}," : "")
+    
+    on: {
+        init: function () {
+            pauseAllVideosExcept(this.slides[this.activeIndex]);
+        },
+        slideChange: function () {
+            pauseAllVideos();
+            var activeSlide = this.slides[this.activeIndex];
+            if (activeSlide) {
+                playVideoInSlide(activeSlide);
             }
         }
+    }
     });
     
     // Helper functions for video control
     function pauseAllVideos() {
-        var videos = document.querySelectorAll('.nop-slider video');
+        var videos = document.querySelectorAll('.swiper video');
         videos.forEach(function(video) {
             if (!video.paused) {
                 video.pause();
@@ -87,7 +141,7 @@
     }
     
     function pauseAllVideosExcept(currentSlide) {
-        var videos = document.querySelectorAll('.nop-slider .swiper-slide:not(.swiper-slide-active) video');
+        var videos = document.querySelectorAll('.swiper .swiper-slide:not(.swiper-slide-active) video');
         videos.forEach(function(video) {
             if (!video.paused) {
                 video.pause();
@@ -120,4 +174,69 @@
             }
         }
     });
+    
+    @(Model.SliderFormat == 3 ? @"
+    // Reels viewer functions
+    var reelsViewerSwiper;
+    
+    function openReelsViewer(index) {
+        document.getElementById('reels-viewer').style.display = 'flex';
+        document.body.style.overflow = 'hidden';
+        
+        var wrapper = document.getElementById('reels-viewer-wrapper');
+        wrapper.innerHTML = '';
+        
+        var slides = document.querySelectorAll('.swiper-reels .swiper-slide');
+        slides.forEach(function(slide, i) {
+            var clone = slide.cloneNode(true);
+            clone.classList.remove('swiper-slide-active');
+            if (i === index) {
+                clone.classList.add('swiper-slide-active');
+            }
+            wrapper.appendChild(clone);
+        });
+        
+        reelsViewerSwiper = new Swiper('.reels-viewer-swiper', {
+            direction: 'vertical',
+            slidesPerView: 1,
+            spaceBetween: 0,
+            grabCursor: true,
+            loop: true,
+            navigation: {
+                nextEl: '.reels-next',
+                prevEl: '.reels-prev'
+            },
+            keyboard: {
+                enabled: true
+            },
+            on: {
+                slideChange: function() {
+                    pauseAllVideos();
+                    var activeSlide = this.slides[this.activeIndex];
+                    if (activeSlide) {
+                        playVideoInSlide(activeSlide);
+                    }
+                }
+            }
+        });
+        
+        reelsViewerSwiper.slideToLoop(index);
+    }
+    
+    function closeReelsViewer() {
+        if (reelsViewerSwiper) {
+            pauseAllVideos();
+            reelsViewerSwiper.destroy(true, true);
+            reelsViewerSwiper = null;
+        }
+        document.getElementById('reels-viewer').style.display = 'none';
+        document.body.style.overflow = 'auto';
+    }
+    
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            closeReelsViewer();
+        }
+    });
+    " : "")
 </script>

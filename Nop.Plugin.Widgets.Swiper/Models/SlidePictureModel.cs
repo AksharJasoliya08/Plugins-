@@ -50,6 +50,68 @@ public record SlidePictureModel : BaseNopModel
     public int PosterPictureId { get; set; }
 
     /// <summary>
+    /// Mobile video URL for responsive support
+    /// </summary>
+    [NopResourceDisplayName("Plugins.Widgets.Swiper.MobileVideoUrl")]
+    public string MobileVideoUrl { get; set; }
+
+    /// <summary>
+    /// Mobile poster picture ID
+    /// </summary>
+    [UIHint("Picture")]
+    [NopResourceDisplayName("Plugins.Widgets.Swiper.MobilePosterPictureId")]
+    public int MobilePosterPictureId { get; set; }
+
+    /// <summary>
+    /// Desktop video URL for hero format
+    /// </summary>
+    [NopResourceDisplayName("Plugins.Widgets.Swiper.DesktopVideoUrl")]
+    public string DesktopVideoUrl { get; set; }
+
+    /// <summary>
+    /// Desktop poster picture ID
+    /// </summary>
+    [UIHint("Picture")]
+    [NopResourceDisplayName("Plugins.Widgets.Swiper.DesktopPosterPictureId")]
+    public int DesktopPosterPictureId { get; set; }
+
+    /// <summary>
+    /// Product ID for product mapping
+    /// </summary>
+    [NopResourceDisplayName("Plugins.Widgets.Swiper.ProductId")]
+    public int ProductId { get; set; }
+
+    /// <summary>
+    /// Heading text for Hero format
+    /// </summary>
+    [NopResourceDisplayName("Plugins.Widgets.Swiper.Heading")]
+    public string Heading { get; set; }
+
+    /// <summary>
+    /// Subtitle text for Hero format
+    /// </summary>
+    [NopResourceDisplayName("Plugins.Widgets.Swiper.Subtitle")]
+    public string Subtitle { get; set; }
+
+    /// <summary>
+    /// CTA button text for Hero format
+    /// </summary>
+    [NopResourceDisplayName("Plugins.Widgets.Swiper.CtaText")]
+    public string CtaText { get; set; }
+
+    /// <summary>
+    /// CTA button URL for Hero format
+    /// </summary>
+    [NopResourceDisplayName("Plugins.Widgets.Swiper.CtaUrl")]
+    public string CtaUrl { get; set; }
+
+    /// <summary>
+    /// Text alignment for Hero format (left, center, right)
+    /// </summary>
+    [NopResourceDisplayName("Plugins.Widgets.Swiper.TextAlignment")]
+    public string TextAlignment { get; set; }
+
+    /// <summary>
     /// Video autoplay
     /// </summary>
     [NopResourceDisplayName("Plugins.Widgets.Swiper.VideoAutoplay")]

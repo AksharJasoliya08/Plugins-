@@ -48,6 +48,56 @@ public class Slide
     public int PosterPictureId { get; set; }
 
     /// <summary>
+    /// Mobile video URL for responsive video support
+    /// </summary>
+    public string MobileVideoUrl { get; set; }
+
+    /// <summary>
+    /// Mobile poster picture ID
+    /// </summary>
+    public int MobilePosterPictureId { get; set; }
+
+    /// <summary>
+    /// Desktop video URL (alternative to VideoUrl for hero format)
+    /// </summary>
+    public string DesktopVideoUrl { get; set; }
+
+    /// <summary>
+    /// Desktop poster picture ID
+    /// </summary>
+    public int DesktopPosterPictureId { get; set; }
+
+    /// <summary>
+    /// Product ID for product mapping (Product Carousel/Reels)
+    /// </summary>
+    public int ProductId { get; set; }
+
+    /// <summary>
+    /// Heading text for Hero format
+    /// </summary>
+    public string Heading { get; set; }
+
+    /// <summary>
+    /// Subtitle text for Hero format
+    /// </summary>
+    public string Subtitle { get; set; }
+
+    /// <summary>
+    /// CTA button text for Hero format
+    /// </summary>
+    public string CtaText { get; set; }
+
+    /// <summary>
+    /// CTA button URL for Hero format
+    /// </summary>
+    public string CtaUrl { get; set; }
+
+    /// <summary>
+    /// Text alignment for Hero format (left, center, right)
+    /// </summary>
+    public string TextAlignment { get; set; }
+
+    /// <summary>
     /// Video autoplay setting
     /// </summary>
     public bool VideoAutoplay { get; set; }

@@ -263,6 +263,92 @@
                 <span asp-validation-for="LinkUrl"></span>
             </div>
         </div>
+
+        <!-- Hero Format Fields -->
+        <div id="hero-fields-section" style="display:none;">
+            <div class="form-group row">
+                <div class="col-md-3">
+                    <nop-label asp-for="Heading" />
+                </div>
+                <div class="col-md-9">
+                    <nop-editor asp-for="Heading" />
+                    <span asp-validation-for="Heading"></span>
+                    <small class="form-text text-muted">@T("Plugins.Widgets.Swiper.Heading.Hint")</small>
+                </div>
+            </div>
+            
+            <div class="form-group row">
+                <div class="col-md-3">
+                    <nop-label asp-for="Subtitle" />
+                </div>
+                <div class="col-md-9">
+                    <nop-editor asp-for="Subtitle" />
+                    <span asp-validation-for="Subtitle"></span>
+                </div>
+            </div>
+            
+            <div class="form-group row">
+                <div class="col-md-3">
+                    <nop-label asp-for="CtaText" />
+                </div>
+                <div class="col-md-9">
+                    <nop-editor asp-for="CtaText" />
+                    <span asp-validation-for="CtaText"></span>
+                    <small class="form-text text-muted">@T("Plugins.Widgets.Swiper.CtaText.Hint")</small>
+                </div>
+            </div>
+            
+            <div class="form-group row">
+                <div class="col-md-3">
+                    <nop-label asp-for="CtaUrl" />
+                </div>
+                <div class="col-md-9">
+                    <nop-editor asp-for="CtaUrl" />
+                    <span asp-validation-for="CtaUrl"></span>
+                </div>
+            </div>
+            
+            <div class="form-group row">
+                <div class="col-md-3">
+                    <nop-label asp-for="TextAlignment" />
+                </div>
+                <div class="col-md-9">
+                    <nop-select asp-for="TextAlignment" asp-items="@(new SelectList(new[]
+                    {
+                        new SelectListItem { Text = "Left", Value = "left" },
+                        new SelectListItem { Text = "Center", Value = "center" },
+                        new SelectListItem { Text = "Right", Value = "right" }
+                    }, "Value", "Text", Model.TextAlignment))" />
+                    <span asp-validation-for="TextAlignment"></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Product Mapping Fields -->
+        <div id="product-mapping-section" style="display:none;">
+            <div class="form-group row">
+                <div class="col-md-3">
+                    <nop-label asp-for="ProductId" />
+                </div>
+                <div class="col-md-9">
+                    <div id="productMappingContainer">
+                        <input type="hidden" asp-for="ProductId" id="ProductId" />
+                        <div class="product-mapping-search">
+                            <input type="text" id="productSearch" class="form-control" placeholder="@T("Plugins.Widgets.Swiper.SearchProduct.Placeholder")" />
+                            <div id="productSearchResults" class="search-results" style="max-height:200px;overflow-y:auto;border:1px solid #ddd;margin-top:5px;display:none;"></div>
+                        </div>
+                        <div id="selectedProductInfo" style="margin-top:10px;display:none;">
+                            <div class="alert alert-info">
+                                <strong id="selectedProductName"></strong><br />
+                                <small id="selectedProductSku"></small>
+                            </div>
+                        </div>
+                    </div>
+                    <span asp-validation-for="ProductId"></span>
+                    <small class="form-text text-muted">@T("Plugins.Widgets.Swiper.ProductId.Hint")</small>
+                </div>
+            </div>
+        </div>
         
         <div class="form-group row">
             <div class="offset-md-3 col-md-9">
@@ -274,13 +360,20 @@
 
 <script asp-location="Footer">
     $(document).ready(function () {
-        // Toggle field visibility based on content type
+        // Toggle field visibility based on content type and slider format
         function toggleFields() {
             var contentType = $('input[name="ContentType"]:checked').val();
+            var sliderFormat = $('#SliderFormat').length > 0 ? $('#SliderFormat').val() : '0';
             
             $('#image-fields-section').toggle(contentType == '0');
             $('#uploaded-video-fields-section').toggle(contentType == '1');
             $('#external-video-fields-section').toggle(contentType == '2');
+            
+            // Show hero fields for all content types when format is Hero (1)
+            $('#hero-fields-section').toggle(sliderFormat == '1');
+            
+            // Show product mapping fields for Product Carousel (2) or Reels (3) formats
+            $('#product-mapping-section').toggle(sliderFormat == '2' || sliderFormat == '3');
         }
         
         // Initial toggle
@@ -289,6 +382,64 @@
         // On content type change
         $('input[name="ContentType"]').on('change', function () {
             toggleFields();
+        });
+        
+        // Listen for slider format changes
+        $(document).on('change', '#SliderFormat', function() {
+            toggleFields();
+        });
+        
+        // Product search functionality
+        var searchTimeout;
+        $('#productSearch').on('input', function() {
+            clearTimeout(searchTimeout);
+            var query = $(this).val().trim();
+            
+            if (query.length < 2) {
+                $('#productSearchResults').hide();
+                return;
+            }
+            
+            searchTimeout = setTimeout(function() {
+                $.ajax({
+                    url: '@Url.Action("ProductSearch", "Product")',
+                    type: 'GET',
+                    data: { query: query, pageNumber: 1, pageSize: 10 },
+                    success: function(response) {
+                        if (response && response.length > 0) {
+                            var html = '';
+                            response.forEach(function(product) {
+                                html += '<div class="product-search-item" style="padding:8px;cursor:pointer;border-bottom:1px solid #eee;" data-productid="' + product.Id + '" data-productname="' + product.Name + '" data-productsku="' + product.Sku + '">' +
+                                    product.Name + ' (' + product.Sku + ')' +
+                                    '</div>';
+                            });
+                            $('#productSearchResults').html(html).show();
+                        } else {
+                            $('#productSearchResults').hide();
+                        }
+                    }
+                });
+            }, 300);
+        });
+        
+        $(document).on('click', '.product-search-item', function() {
+            var productId = $(this).data('productid');
+            var productName = $(this).data('productname');
+            var productSku = $(this).data('productsku');
+            
+            $('#ProductId').val(productId);
+            $('#selectedProductName').text(productName);
+            $('#selectedProductSku').text('SKU: ' + productSku);
+            $('#selectedProductInfo').show();
+            $('#productSearchResults').hide();
+            $('#productSearch').val(productName + ' (' + productSku + ')');
+        });
+        
+        // Hide search results when clicking outside
+        $(document).on('click', function(e) {
+            if (!$(e.target).closest('.product-mapping-search').length) {
+                $('#productSearchResults').hide();
+            }
         });
         
         // Video upload button
@@ -383,6 +534,25 @@
         var existingVideoUrl = $('#VideoUrl').val();
         if (existingVideoUrl) {
             updateVideoPreview(existingVideoUrl);
+        }
+        
+        // Show existing product info on page load
+        var existingProductId = $('#ProductId').val();
+        if (existingProductId > 0) {
+            // Load product info via AJAX if needed
+            $.ajax({
+                url: '@Url.Action("GetProductById", "Product")',
+                type: 'GET',
+                data: { productId: existingProductId },
+                success: function(product) {
+                    if (product) {
+                        $('#selectedProductName').text(product.Name);
+                        $('#selectedProductSku').text('SKU: ' + product.Sku);
+                        $('#selectedProductInfo').show();
+                        $('#productSearch').val(product.Name + ' (' + product.Sku + ')');
+                    }
+                }
+            });
         }
     });
 </script>

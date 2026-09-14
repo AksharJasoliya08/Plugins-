@@ -17,6 +17,74 @@
                     <div class="card-body">
                         <div class="form-group row">
                             <div class="col-md-3">
+                                <nop-override-store-checkbox asp-for="SliderFormat_OverrideForStore" asp-input="SliderFormat" asp-store-scope="@Model.ActiveStoreScopeConfiguration" />
+                                <nop-label asp-for="SliderFormat" />
+                            </div>
+                            <div class="col-md-9">
+                                <nop-select asp-for="SliderFormat" asp-items="@(new SelectList(new[]
+                                {
+                                    new SelectListItem { Text = T(\"Plugins.Widgets.Swiper.SliderFormat.Standard\").Text, Value = \"0\" },
+                                    new SelectListItem { Text = T(\"Plugins.Widgets.Swiper.SliderFormat.HeroVideo\").Text, Value = \"1\" },
+                                    new SelectListItem { Text = T(\"Plugins.Widgets.Swiper.SliderFormat.ProductCarousel\").Text, Value = \"2\" },
+                                    new SelectListItem { Text = T(\"Plugins.Widgets.Swiper.SliderFormat.Reels\").Text, Value = \"3\" }
+                                }, \"Value\", \"Text\", Model.SliderFormat))" />
+                                <span asp-validation-for="SliderFormat"></span>
+                            </div>
+                        </div>
+                        <nop-nested-setting asp-for="SliderFormat">
+                            <div class="form-group row">
+                                <div class="col-md-3">
+                                    <nop-override-store-checkbox asp-for="EnableProductMapping_OverrideForStore" asp-input="EnableProductMapping" asp-store-scope="@Model.ActiveStoreScopeConfiguration" />
+                                    <nop-label asp-for="EnableProductMapping" />
+                                </div>
+                                <div class="col-md-9">
+                                    <nop-editor asp-for="EnableProductMapping" />
+                                    <span asp-validation-for="EnableProductMapping"></span>
+                                </div>
+                            </div>
+                            <div class="form-group row">
+                                <div class="col-md-3">
+                                    <nop-override-store-checkbox asp-for="ShowProductName_OverrideForStore" asp-input="ShowProductName" asp-store-scope="@Model.ActiveStoreScopeConfiguration" />
+                                    <nop-label asp-for="ShowProductName" />
+                                </div>
+                                <div class="col-md-9">
+                                    <nop-editor asp-for="ShowProductName" />
+                                    <span asp-validation-for="ShowProductName"></span>
+                                </div>
+                            </div>
+                            <div class="form-group row">
+                                <div class="col-md-3">
+                                    <nop-override-store-checkbox asp-for="ShowProductPrice_OverrideForStore" asp-input="ShowProductPrice" asp-store-scope="@Model.ActiveStoreScopeConfiguration" />
+                                    <nop-label asp-for="ShowProductPrice" />
+                                </div>
+                                <div class="col-md-9">
+                                    <nop-editor asp-for="ShowProductPrice" />
+                                    <span asp-validation-for="ShowProductPrice"></span>
+                                </div>
+                            </div>
+                            <div class="form-group row">
+                                <div class="col-md-3">
+                                    <nop-override-store-checkbox asp-for="ShowShopNowButton_OverrideForStore" asp-input="ShowShopNowButton" asp-store-scope="@Model.ActiveStoreScopeConfiguration" />
+                                    <nop-label asp-for="ShowShopNowButton" />
+                                </div>
+                                <div class="col-md-9">
+                                    <nop-editor asp-for="ShowShopNowButton" />
+                                    <span asp-validation-for="ShowShopNowButton"></span>
+                                </div>
+                            </div>
+                            <div class="form-group row">
+                                <div class="col-md-3">
+                                    <nop-override-store-checkbox asp-for="ButtonText_OverrideForStore" asp-input="ButtonText" asp-store-scope="@Model.ActiveStoreScopeConfiguration" />
+                                    <nop-label asp-for="ButtonText" />
+                                </div>
+                                <div class="col-md-9">
+                                    <nop-editor asp-for="ButtonText" />
+                                    <span asp-validation-for="ButtonText"></span>
+                                </div>
+                            </div>
+                        </nop-nested-setting>
+                        <div class="form-group row">
+                            <div class="col-md-3">
                                 <nop-override-store-checkbox asp-for="ShowNavigation_OverrideForStore" asp-input="ShowNavigation" asp-store-scope="@Model.ActiveStoreScopeConfiguration" />
                                 <nop-label asp-for="ShowNavigation" />
                             </div>
