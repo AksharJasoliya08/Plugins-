@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
 using Nop.Core;
 using Nop.Plugin.Widgets.Swiper.Domain;
@@ -28,6 +29,7 @@ public class WidgetSwiperController : BasePluginController
     protected readonly IPictureService _pictureService;
     protected readonly ISettingService _settingService;
     protected readonly IStoreContext _storeContext;
+    protected readonly IWebHostEnvironment _webHostEnvironment;
 
     #endregion
 
@@ -37,13 +39,15 @@ public class WidgetSwiperController : BasePluginController
         INotificationService notificationService,
         IPictureService pictureService,
         ISettingService settingService,
-        IStoreContext storeContext)
+        IStoreContext storeContext,
+        IWebHostEnvironment webHostEnvironment)
     {
         _localizationService = localizationService;
         _notificationService = notificationService;
         _pictureService = pictureService;
         _settingService = settingService;
         _storeContext = storeContext;
+        _webHostEnvironment = webHostEnvironment;
     }
 
     #endregion
@@ -146,7 +150,16 @@ public class WidgetSwiperController : BasePluginController
             PictureId = model.PictureId,
             AltText = model.AltText,
             TitleText = model.TitleText,
-            LinkUrl = model.LinkUrl
+            LinkUrl = model.LinkUrl,
+            ContentType = model.ContentType,
+            VideoUrl = model.VideoUrl,
+            ExternalVideoUrl = model.ExternalVideoUrl,
+            PosterPictureId = model.PosterPictureId,
+            VideoAutoplay = model.VideoAutoplay,
+            VideoMuted = model.VideoMuted,
+            VideoLoop = model.VideoLoop,
+            VideoControls = model.VideoControls,
+            Description = model.Description
         });
 
         sliderSettings.Slides = JsonConvert.SerializeObject(slides);
@@ -168,19 +181,28 @@ public class WidgetSwiperController : BasePluginController
         var model = await new SlideListModel().PrepareToGridAsync(slidesSearchModel, slides.ToPagedList(slidesSearchModel), () =>
         {
             return slides
-                .Where(s => s.PictureId != 0)
+                .Where(s => s.PictureId != 0 || !string.IsNullOrEmpty(s.VideoUrl) || !string.IsNullOrEmpty(s.ExternalVideoUrl))
                 .SelectAwait(async item =>
                 {
-                    var picture = (await _pictureService.GetPictureByIdAsync(item.PictureId))
-                        ?? throw new Exception("Picture cannot be loaded");
+                    var picture = item.PictureId > 0 ? await _pictureService.GetPictureByIdAsync(item.PictureId) : null;
+                    var posterPicture = item.PosterPictureId > 0 ? await _pictureService.GetPictureByIdAsync(item.PosterPictureId) : null;
 
                     return new PublicSlideModel
                     {
                         PictureId = item.PictureId,
-                        PictureUrl = (await _pictureService.GetPictureUrlAsync(picture, 200)).Url,
+                        PictureUrl = picture != null ? (await _pictureService.GetPictureUrlAsync(picture, 200)).Url : "",
                         TitleText = item.TitleText,
                         AltText = item.AltText,
-                        LinkUrl = item.LinkUrl
+                        LinkUrl = item.LinkUrl,
+                        ContentType = item.ContentType,
+                        VideoUrl = item.VideoUrl,
+                        ExternalVideoUrl = item.ExternalVideoUrl,
+                        PosterPictureUrl = posterPicture != null ? (await _pictureService.GetPictureUrlAsync(posterPicture, 200)).Url : "",
+                        VideoAutoplay = item.VideoAutoplay,
+                        VideoMuted = item.VideoMuted,
+                        VideoLoop = item.VideoLoop,
+                        VideoControls = item.VideoControls,
+                        Description = item.Description
                     };
                 });
         });
@@ -242,12 +264,78 @@ public class WidgetSwiperController : BasePluginController
         slide.TitleText = model.TitleText;
         slide.AltText = model.AltText;
         slide.LinkUrl = model.LinkUrl;
+        slide.ContentType = model.ContentType;
+        slide.VideoUrl = model.VideoUrl;
+        slide.ExternalVideoUrl = model.ExternalVideoUrl;
+        slide.PosterPictureId = model.PosterPictureId;
+        slide.VideoAutoplay = model.VideoAutoplay;
+        slide.VideoMuted = model.VideoMuted;
+        slide.VideoLoop = model.VideoLoop;
+        slide.VideoControls = model.VideoControls;
+        slide.Description = model.Description;
 
         var sliderSettings = await _settingService.LoadSettingAsync<SwiperSettings>(storeScope);
         sliderSettings.Slides = JsonConvert.SerializeObject(slides);
         await _settingService.SaveSettingOverridablePerStoreAsync(sliderSettings, x => x.Slides, true, storeScope);
 
         return new NullJsonResult();
+    }
+
+    /// <summary>
+    /// Upload video file (MegaSlider-style upload)
+    /// </summary>
+    [HttpPost]
+    [CheckPermission(StandardPermission.Configuration.MANAGE_WIDGETS)]
+    public virtual async Task<IActionResult> UploadVideo(IFormFile videoFile)
+    {
+        // 1. Null check
+        if (videoFile == null || videoFile.Length == 0)
+            return Json(new { success = false, message = "No file uploaded." });
+
+        // 2. MIME type server-side validation
+        var allowedMimeTypes = new[] { "video/mp4", "video/webm" };
+        if (!allowedMimeTypes.Contains(videoFile.ContentType?.ToLower()))
+            return Json(new { success = false, message = "Only MP4 and WebM formats are supported." });
+
+        // 3. Extension validation
+        var extension = Path.GetExtension(videoFile.FileName)?.ToLower();
+        if (extension != ".mp4" && extension != ".webm")
+            return Json(new { success = false, message = "Only MP4 and WebM formats are supported." });
+
+        // 4. Filename sanitization
+        var originalName = Path.GetFileNameWithoutExtension(videoFile.FileName ?? "video");
+
+        // Remove unsafe characters — replace with underscore
+        var sanitized = System.Text.RegularExpressions.Regex
+            .Replace(originalName, @"[<>\/\\:*?|""'\s\.]+", "_");
+
+        // Remove path traversal sequences
+        sanitized = sanitized.Replace("..", "_");
+
+        // Max 100 chars total (filename + extension)
+        var maxNameLength = 100 - extension.Length;
+        if (sanitized.Length > maxNameLength)
+            sanitized = sanitized.Substring(0, maxNameLength);
+
+        // Use sanitized name + GUID suffix to avoid conflicts
+        var safeFileName = sanitized + "_" + Guid.NewGuid().ToString("N").Substring(0, 8) + extension;
+
+        // 5. Save file to wwwroot/videos folder
+        var videosFolderPath = Path.Combine(_webHostEnvironment.WebRootPath, "videos");
+
+        if (!Directory.Exists(videosFolderPath))
+            Directory.CreateDirectory(videosFolderPath);
+
+        var filePath = Path.Combine(videosFolderPath, safeFileName);
+
+        using (var stream = new FileStream(filePath, FileMode.Create))
+        {
+            await videoFile.CopyToAsync(stream);
+        }
+
+        var url = "/videos/" + safeFileName;
+
+        return Json(new { success = true, url = url });
     }
 
     #endregion

@@ -5,13 +5,33 @@
     {
         <img class="slider-img" src="@Model.PictureUrl" alt="@Model.AltText" title="@Model.TitleText" @(Model.LazyLoading ? "loading=lazy" : string.Empty) />
     }
+
+    void slideVideo()
+    {
+        var videoUrl = Model.ContentType == 1 ? Model.VideoUrl : Model.ExternalVideoUrl;
+        var posterAttr = !string.IsNullOrEmpty(Model.PosterPictureUrl) ? $"poster=\"{Model.PosterPictureUrl}\"" : "";
+        var autoplayAttr = Model.VideoAutoplay ? "autoplay" : "";
+        var mutedAttr = Model.VideoMuted || Model.VideoAutoplay ? "muted" : "";
+        var loopAttr = Model.VideoLoop ? "loop" : "";
+        var controlsAttr = Model.VideoControls ? "controls" : "";
+        
+        <video class="slider-video" @posterAttr @autoplayAttr @mutedAttr @loopAttr @controlsAttr playsinline>
+            <source src="@videoUrl" type="@(Model.ContentType == 1 ? (Model.VideoUrl.EndsWith(".webm") ? "video/webm" : "video/mp4") : "video/mp4")" />
+            @T("Plugins.Widgets.Swiper.VideoNotSupported")
+        </video>
+        
+        if (!string.IsNullOrEmpty(Model.Description))
+        {
+            <div class="slide-description">@Model.Description</div>
+        }
+    }
 }
 
-@if (!string.IsNullOrEmpty(Model.PictureUrl))
-{
-
-    <div class="swiper-slide">
-        @if (!string.IsNullOrEmpty(Model.LinkUrl))
+<div class="swiper-slide">
+    @if (Model.ContentType == 0 && !string.IsNullOrEmpty(Model.PictureUrl))
+    {
+        // Image Slide
+        if (!string.IsNullOrEmpty(Model.LinkUrl))
         {
             <a href="@Model.LinkUrl" aria-label="@Model.AltText">
                 @{ slideImage(); }
@@ -22,9 +42,37 @@
             slideImage();
         }
 
-        @if (Model.LazyLoading)
+        if (Model.LazyLoading)
         {
             <div class="swiper-lazy-preloader"></div>
         }
-    </div>
-}
+    }
+    else if (Model.ContentType == 1 && !string.IsNullOrEmpty(Model.VideoUrl))
+    {
+        // Uploaded Video Slide
+        if (!string.IsNullOrEmpty(Model.LinkUrl))
+        {
+            <a href="@Model.LinkUrl" aria-label="@Model.TitleText" class="video-slide-link">
+                @{ slideVideo(); }
+            </a>
+        }
+        else
+        {
+            slideVideo();
+        }
+    }
+    else if (Model.ContentType == 2 && !string.IsNullOrEmpty(Model.ExternalVideoUrl))
+    {
+        // External Video URL Slide
+        if (!string.IsNullOrEmpty(Model.LinkUrl))
+        {
+            <a href="@Model.LinkUrl" aria-label="@Model.TitleText" class="video-slide-link">
+                @{ slideVideo(); }
+            </a>
+        }
+        else
+        {
+            slideVideo();
+        }
+    }
+</div>

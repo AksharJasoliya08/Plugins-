@@ -10,3 +10,51 @@
 .nop-slider .slider-img {
   max-width: 100%;
 }
+
+/* Video slide styles */
+.nop-slider .slider-video {
+  width: 100%;
+  height: auto;
+  display: block;
+  object-fit: cover;
+}
+
+.nop-slider .slide-description {
+  position: absolute;
+  bottom: 20px;
+  left: 20px;
+  right: 20px;
+  color: #fff;
+  background: rgba(0, 0, 0, 0.6);
+  padding: 15px 20px;
+  border-radius: 4px;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.nop-slider .video-slide-link {
+  display: block;
+  position: relative;
+}
+
+/* Responsive video container */
+.nop-slider .swiper-slide {
+  position: relative;
+}
+
+/* Upload progress spinner */
+#video-upload-progress .spinner-border {
+  width: 1rem;
+  height: 1rem;
+}
+
+/* Video preview container */
+#video-preview-container video {
+  max-width: 100%;
+  height: auto;
+}
+
+/* Content type radio buttons */
+.form-check-inline {
+  margin-right: 1rem;
+}

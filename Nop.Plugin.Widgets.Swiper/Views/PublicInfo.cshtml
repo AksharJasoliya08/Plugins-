@@ -60,5 +60,64 @@
             },
             </text>
         }
+        on: {
+            init: function () {
+                pauseAllVideosExcept(this.slides[this.activeIndex]);
+            },
+            slideChange: function () {
+                // Pause all videos first
+                pauseAllVideos();
+                // Play video in active slide if autoplay is enabled
+                var activeSlide = this.slides[this.activeIndex];
+                if (activeSlide) {
+                    playVideoInSlide(activeSlide);
+                }
+            }
+        }
+    });
+    
+    // Helper functions for video control
+    function pauseAllVideos() {
+        var videos = document.querySelectorAll('.nop-slider video');
+        videos.forEach(function(video) {
+            if (!video.paused) {
+                video.pause();
+            }
+        });
+    }
+    
+    function pauseAllVideosExcept(currentSlide) {
+        var videos = document.querySelectorAll('.nop-slider .swiper-slide:not(.swiper-slide-active) video');
+        videos.forEach(function(video) {
+            if (!video.paused) {
+                video.pause();
+            }
+        });
+    }
+    
+    function playVideoInSlide(slide) {
+        var video = slide.querySelector('video');
+        if (video) {
+            var autoplay = video.hasAttribute('autoplay');
+            if (autoplay) {
+                video.play().catch(function(error) {
+                    console.log('Video autoplay prevented:', error);
+                });
+            }
+        }
+    }
+    
+    // Handle video click to toggle play/pause when controls are not shown
+    document.addEventListener('click', function(e) {
+        if (e.target.closest('.slider-video')) {
+            var video = e.target.closest('.slider-video');
+            if (!video.hasAttribute('controls')) {
+                if (video.paused) {
+                    video.play();
+                } else {
+                    video.pause();
+                }
+            }
+        }
     });
 </script>
