@@ -1,16 +1,17 @@
 ```
+# Compressed files
+*.zip
+
 # Build artifacts
 *.dll
 *.exe
 *.pdb
-*.config
-bin/
-obj/
-out/
+*.nupkg
 
 # Dependencies
 packages/
-node_modules/
+bin/
+obj/
 
 # Logs
 *.log
@@ -20,11 +21,9 @@ node_modules/
 .env.local
 *.env.*
 
-# Editors
-.vs/
+# Editor/IDE
 .vscode/
 .idea/
-*.userprefs
 *.user
 *.suo
 *.userosscache
@@ -33,7 +32,4 @@ node_modules/
 # OS generated files
 .DS_Store
 Thumbs.db
-desktop.ini
-ehthumbs.db
-Icon?
 ```

@@ -5,9 +5,13 @@ using Nop.Core.Caching;
 using Nop.Plugin.Widgets.Swiper.Domain;
 using Nop.Plugin.Widgets.Swiper.Infrastructure.Cache;
 using Nop.Plugin.Widgets.Swiper.Models;
+using Nop.Plugin.Widgets.Swiper.Services;
 using Nop.Services.Configuration;
 using Nop.Services.Media;
 using Nop.Services.Catalog;
+using Nop.Services.Customers;
+using Nop.Services.Pricing;
+using Nop.Services.Seo;
 using Nop.Web.Framework.Components;
 
 namespace Nop.Plugin.Widgets.Swiper.Components;
@@ -22,17 +26,26 @@ public class WidgetSwiperViewComponent : NopViewComponent
     protected readonly IStoreContext _storeContext;
     protected readonly IWebHelper _webHelper;
     protected readonly IProductService _productService;
+    protected readonly ISwiperSliderService _swiperSliderService;
+    protected readonly ICustomerService _customerService;
+    protected readonly IPriceCalculationService _priceCalculationService;
+    protected readonly IUrlRecordService _urlRecordService;
 
     #endregion
 
     #region Ctor
 
-    public WidgetSwiperViewComponent(IPictureService pictureService,
-    IStaticCacheManager staticCacheManager,
-    ISettingService settingService,
-    IStoreContext storeContext,
-    IWebHelper webHelper,
-    IProductService productService)
+    public WidgetSwiperViewComponent(
+        IPictureService pictureService,
+        IStaticCacheManager staticCacheManager,
+        ISettingService settingService,
+        IStoreContext storeContext,
+        IWebHelper webHelper,
+        IProductService productService,
+        ISwiperSliderService swiperSliderService,
+        ICustomerService customerService,
+        IPriceCalculationService priceCalculationService,
+        IUrlRecordService urlRecordService)
     {
         _pictureService = pictureService;
         _staticCacheManager = staticCacheManager;
@@ -40,6 +53,10 @@ public class WidgetSwiperViewComponent : NopViewComponent
         _storeContext = storeContext;
         _webHelper = webHelper;
         _productService = productService;
+        _swiperSliderService = swiperSliderService;
+        _customerService = customerService;
+        _priceCalculationService = priceCalculationService;
+        _urlRecordService = urlRecordService;
     }
 
     #endregion
@@ -71,27 +88,129 @@ public class WidgetSwiperViewComponent : NopViewComponent
     public async Task<IViewComponentResult> InvokeAsync(string widgetZone, object additionalData)
     {
         var store = await _storeContext.GetCurrentStoreAsync();
-        var sliderSettings = await _settingService.LoadSettingAsync<SwiperSettings>(store.Id);
+        
+        // Load slider from database instead of JSON settings
+        var sliders = await _swiperSliderService.GetAllSlidersAsync(widgetZone: widgetZone, storeId: store.Id, onlyEnabled: true);
+        
+        if (sliders == null || !sliders.Any())
+        {
+            // Fallback to old JSON settings for backward compatibility
+            var sliderSettings = await _settingService.LoadSettingAsync<SwiperSettings>(store.Id);
+            if (string.IsNullOrEmpty(sliderSettings.Slides))
+                return Content("");
 
-        if (string.IsNullOrEmpty(sliderSettings.Slides))
+            var model = new PublicInfoModel
+            {
+                ShowNavigation = sliderSettings.ShowNavigation,
+                ShowPagination = sliderSettings.ShowPagination,
+                Autoplay = sliderSettings.Autoplay,
+                AutoplayDelay = sliderSettings.AutoplayDelay,
+                SliderFormat = sliderSettings.SliderFormat,
+                EnableProductMapping = sliderSettings.EnableProductMapping,
+                ShowProductName = sliderSettings.ShowProductName,
+                ShowProductPrice = sliderSettings.ShowProductPrice,
+                ShowShopNowButton = sliderSettings.ShowShopNowButton,
+                ButtonText = sliderSettings.ButtonText
+            };
+
+            var slides = JsonConvert.DeserializeObject<List<Slide>>(sliderSettings.Slides);
+            foreach (var slide in slides)
+            {
+                var picUrl = await GetPictureUrlAsync(slide.PictureId);
+                var posterPicUrl = await GetPictureUrlAsync(slide.PosterPictureId);
+                var mobilePosterPicUrl = await GetPictureUrlAsync(slide.MobilePosterPictureId);
+                var desktopPosterPicUrl = await GetPictureUrlAsync(slide.DesktopPosterPictureId);
+
+                var publicSlideModel = new PublicSlideModel
+                {
+                    PictureId = slide.PictureId,
+                    PictureUrl = picUrl,
+                    TitleText = slide.TitleText,
+                    LinkUrl = slide.LinkUrl,
+                    AltText = slide.AltText,
+                    LazyLoading = sliderSettings.LazyLoading,
+                    ContentType = slide.ContentType,
+                    VideoUrl = slide.VideoUrl,
+                    ExternalVideoUrl = slide.ExternalVideoUrl,
+                    PosterPictureUrl = posterPicUrl,
+                    MobileVideoUrl = slide.MobileVideoUrl,
+                    MobilePosterPictureUrl = mobilePosterPicUrl,
+                    DesktopVideoUrl = slide.DesktopVideoUrl,
+                    DesktopPosterPictureUrl = desktopPosterPicUrl,
+                    ProductId = slide.ProductId,
+                    Heading = slide.Heading,
+                    Subtitle = slide.Subtitle,
+                    CtaText = slide.CtaText,
+                    CtaUrl = slide.CtaUrl,
+                    TextAlignment = slide.TextAlignment,
+                    VideoAutoplay = slide.VideoAutoplay,
+                    VideoMuted = slide.VideoMuted,
+                    VideoLoop = slide.VideoLoop,
+                    VideoControls = slide.VideoControls,
+                    Description = slide.Description
+                };
+
+                // Load product information if product mapping is enabled and productId is set
+                if (sliderSettings.EnableProductMapping && slide.ProductId > 0)
+                {
+                    var product = await _productService.GetProductByIdAsync(slide.ProductId);
+                    if (product != null && product.Published && !product.Deleted)
+                    {
+                        publicSlideModel.ProductName = product.Name;
+                        publicSlideModel.ProductUrl = await _productService.GetProductUrlAsync(product);
+                        
+                        // Get product price using correct service
+                        var customer = await _customerService.GetCurrentCustomerAsync();
+                        var priceResult = await _priceCalculationService.GetFinalPriceAsync(product, customer);
+                        publicSlideModel.ProductPrice = priceResult.ToString("C");
+                        
+                        // Get product thumbnail - use first product picture
+                        var productPictures = await _productService.GetProductPicturesByProductIdAsync(product.Id);
+                        if (productPictures != null && productPictures.Any())
+                        {
+                            publicSlideModel.ProductThumbnailUrl = await GetPictureUrlAsync(productPictures.First().PictureId);
+                        }
+                    }
+                }
+
+                publicSlideModel.EnableProductMapping = sliderSettings.EnableProductMapping;
+                publicSlideModel.ShowProductName = sliderSettings.ShowProductName;
+                publicSlideModel.ShowProductPrice = sliderSettings.ShowProductPrice;
+                publicSlideModel.ShowShopNowButton = sliderSettings.ShowShopNowButton;
+                publicSlideModel.ButtonText = sliderSettings.ButtonText;
+                publicSlideModel.SliderFormat = sliderSettings.SliderFormat;
+
+                model.Slides.Add(publicSlideModel);
+            }
+
+            if (!model.Slides.Any())
+                return Content("");
+
+            return View("~/Plugins/Widgets.Swiper/Views/PublicInfo.cshtml", model);
+        }
+
+        // Use database slider
+        var slider = sliders.First();
+        var dbSlides = await _swiperSliderService.GetSlidesBySliderIdAsync(slider.Id, store.Id);
+
+        if (dbSlides == null || !dbSlides.Any())
             return Content("");
 
-        var model = new PublicInfoModel
+        var dbModel = new PublicInfoModel
         {
-            ShowNavigation = sliderSettings.ShowNavigation,
-            ShowPagination = sliderSettings.ShowPagination,
-            Autoplay = sliderSettings.Autoplay,
-            AutoplayDelay = sliderSettings.AutoplayDelay,
-            SliderFormat = sliderSettings.SliderFormat,
-            EnableProductMapping = sliderSettings.EnableProductMapping,
-            ShowProductName = sliderSettings.ShowProductName,
-            ShowProductPrice = sliderSettings.ShowProductPrice,
-            ShowShopNowButton = sliderSettings.ShowShopNowButton,
-            ButtonText = sliderSettings.ButtonText
+            ShowNavigation = slider.ShowNavigation,
+            ShowPagination = slider.ShowPagination,
+            Autoplay = slider.Autoplay,
+            AutoplayDelay = slider.AutoplayDelay,
+            SliderFormat = slider.SliderFormat,
+            EnableProductMapping = slider.EnableProductMapping,
+            ShowProductName = slider.ShowProductName,
+            ShowProductPrice = slider.ShowProductPrice,
+            ShowShopNowButton = slider.ShowShopNowButton,
+            ButtonText = slider.ButtonText ?? "Shop Now"
         };
 
-        var slides = JsonConvert.DeserializeObject<List<Slide>>(sliderSettings.Slides);
-        foreach (var slide in slides)
+        foreach (var slide in dbSlides)
         {
             var picUrl = await GetPictureUrlAsync(slide.PictureId);
             var posterPicUrl = await GetPictureUrlAsync(slide.PosterPictureId);
@@ -100,12 +219,13 @@ public class WidgetSwiperViewComponent : NopViewComponent
 
             var publicSlideModel = new PublicSlideModel
             {
+                Id = slide.Id,
                 PictureId = slide.PictureId,
                 PictureUrl = picUrl,
                 TitleText = slide.TitleText,
                 LinkUrl = slide.LinkUrl,
                 AltText = slide.AltText,
-                LazyLoading = sliderSettings.LazyLoading,
+                LazyLoading = slider.LazyLoading,
                 ContentType = slide.ContentType,
                 VideoUrl = slide.VideoUrl,
                 ExternalVideoUrl = slide.ExternalVideoUrl,
@@ -128,46 +248,45 @@ public class WidgetSwiperViewComponent : NopViewComponent
             };
 
             // Load product information if product mapping is enabled and productId is set
-            if (sliderSettings.EnableProductMapping && slide.ProductId > 0)
+            if (slider.EnableProductMapping && slide.ProductId > 0)
             {
                 var product = await _productService.GetProductByIdAsync(slide.ProductId);
-                if (product != null)
+                if (product != null && product.Published && !product.Deleted)
                 {
                     publicSlideModel.ProductName = product.Name;
-                    publicSlideModel.ProductUrl = await _productService.GetProductUrlAsync(product);
+                    
+                    // Get product URL using UrlRecordService
+                    var seoName = await _urlRecordService.GetSeoNameAsync(product.Id, Nop.Core.Domain.Seo.EntityType.Product, string.Empty);
+                    publicSlideModel.ProductUrl = $"{_webHelper.GetStoreLocation()}product/{seoName}";
                     
                     // Get product price
-                    var priceCalculationResult = await _productService.GetFinalPriceAsync(
-                        product, 
-                        await _storeContext.GetCurrentCustomerAsync(), 
-                        false, 
-                        1);
-                    publicSlideModel.ProductPrice = priceCalculationResult.FinalPrice.ToString("C");
+                    var customer = await _customerService.GetCurrentCustomerAsync();
+                    var priceResult = await _priceCalculationService.GetFinalPriceAsync(product, customer);
+                    publicSlideModel.ProductPrice = priceResult.ToString("C");
                     
                     // Get product thumbnail
-                    var productPicture = await _productService.GetProductPicturesAsync(product);
-                    if (productPicture.Any())
+                    var productPictures = await _productService.GetProductPicturesByProductIdAsync(product.Id);
+                    if (productPictures != null && productPictures.Any())
                     {
-                        publicSlideModel.ProductThumbnailUrl = await GetPictureUrlAsync(productPicture.First().PictureId);
+                        publicSlideModel.ProductThumbnailUrl = await GetPictureUrlAsync(productPictures.First().PictureId);
                     }
                 }
             }
 
-            // Pass settings to the slide model for rendering
-            publicSlideModel.EnableProductMapping = sliderSettings.EnableProductMapping;
-            publicSlideModel.ShowProductName = sliderSettings.ShowProductName;
-            publicSlideModel.ShowProductPrice = sliderSettings.ShowProductPrice;
-            publicSlideModel.ShowShopNowButton = sliderSettings.ShowShopNowButton;
-            publicSlideModel.ButtonText = sliderSettings.ButtonText;
-            publicSlideModel.SliderFormat = sliderSettings.SliderFormat;
+            publicSlideModel.EnableProductMapping = slider.EnableProductMapping;
+            publicSlideModel.ShowProductName = slider.ShowProductName;
+            publicSlideModel.ShowProductPrice = slider.ShowProductPrice;
+            publicSlideModel.ShowShopNowButton = slider.ShowShopNowButton;
+            publicSlideModel.ButtonText = slider.ButtonText ?? "Shop Now";
+            publicSlideModel.SliderFormat = slider.SliderFormat;
 
-            model.Slides.Add(publicSlideModel);
+            dbModel.Slides.Add(publicSlideModel);
         }
 
-        if (!model.Slides.Any())
+        if (!dbModel.Slides.Any())
             return Content("");
 
-        return View("~/Plugins/Widgets.Swiper/Views/PublicInfo.cshtml", model);
+        return View("~/Plugins/Widgets.Swiper/Views/PublicInfo.cshtml", dbModel);
     }
 
     #endregion
