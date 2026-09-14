@@ -1,0 +1,39 @@
+```
+# Build artifacts
+*.dll
+*.exe
+*.pdb
+*.config
+bin/
+obj/
+out/
+
+# Dependencies
+packages/
+node_modules/
+
+# Logs
+*.log
+
+# Environment
+.env
+.env.local
+*.env.*
+
+# Editors
+.vs/
+.vscode/
+.idea/
+*.userprefs
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# OS generated files
+.DS_Store
+Thumbs.db
+desktop.ini
+ehthumbs.db
+Icon?
+```

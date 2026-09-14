@@ -7,13 +7,232 @@
     <div class="card-body">
         <div class="form-group row advanced-setting">
             <div class="col-md-3">
-                <nop-label asp-for="PictureId" />
+                <nop-label asp-for="ContentType" />
             </div>
             <div class="col-md-9">
-                <nop-editor asp-for="PictureId" />
-                <span asp-validation-for="PictureId"></span>
+                <div class="form-check form-check-inline">
+                    <input class="form-check-input"
+                           type="radio"
+                           asp-for="ContentType"
+                           value="0"
+                           id="ContentTypeImage" />
+                    <label class="form-check-label" for="ContentTypeImage">
+                        @T("Plugins.Widgets.Swiper.ContentType.Image")
+                    </label>
+                </div>
+                <div class="form-check form-check-inline" style="margin-left:20px;">
+                    <input class="form-check-input"
+                           type="radio"
+                           asp-for="ContentType"
+                           value="1"
+                           id="ContentTypeUploadedVideo" />
+                    <label class="form-check-label" for="ContentTypeUploadedVideo">
+                        @T("Plugins.Widgets.Swiper.ContentType.UploadedVideo")
+                    </label>
+                </div>
+                <div class="form-check form-check-inline" style="margin-left:20px;">
+                    <input class="form-check-input"
+                           type="radio"
+                           asp-for="ContentType"
+                           value="2"
+                           id="ContentTypeExternalVideo" />
+                    <label class="form-check-label" for="ContentTypeExternalVideo">
+                        @T("Plugins.Widgets.Swiper.ContentType.ExternalVideo")
+                    </label>
+                </div>
             </div>
         </div>
+
+        <!-- Image Fields -->
+        <div id="image-fields-section">
+            <div class="form-group row">
+                <div class="col-md-3">
+                    <nop-label asp-for="PictureId" />
+                </div>
+                <div class="col-md-9">
+                    <nop-editor asp-for="PictureId" />
+                    <span asp-validation-for="PictureId"></span>
+                </div>
+            </div>
+            <div class="form-group row">
+                <div class="col-md-3">
+                    <nop-label asp-for="AltText" />
+                </div>
+                <div class="col-md-9">
+                    <nop-editor asp-for="AltText" />
+                    <span asp-validation-for="AltText"></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Uploaded Video Fields -->
+        <div id="uploaded-video-fields-section" style="display:none;">
+            <div class="form-group row">
+                <div class="col-md-3">
+                    <nop-label asp-for="VideoUrl" />
+                </div>
+                <div class="col-md-9">
+                    <div class="input-group">
+                        <nop-editor asp-for="VideoUrl" class="form-control" id="VideoUrl" />
+                        <div class="input-group-append">
+                            <button type="button" class="btn btn-secondary" id="btn-upload-video">
+                                <i class="fas fa-upload"></i> @T("Admin.Common.Upload")
+                            </button>
+                        </div>
+                    </div>
+                    <input type="file" id="videoFile" accept="video/mp4,video/webm" style="display:none;" />
+                    <small class="form-text text-muted">@T("Plugins.Widgets.Swiper.VideoUpload.HelpText")</small>
+                    
+                    <!-- Upload progress -->
+                    <div id="video-upload-progress" style="display:none;" class="mt-2">
+                        <div class="d-flex align-items-center">
+                            <div class="spinner-border spinner-border-sm text-primary mr-2" role="status"></div>
+                            <span class="text-muted">@T("Plugins.Widgets.Swiper.VideoUpload.Uploading")</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Upload messages -->
+                    <div id="video-upload-error" class="alert alert-danger mt-2" style="display:none;"></div>
+                    <div id="video-upload-success" class="alert alert-success mt-2" style="display:none;"></div>
+                    
+                    <!-- Video preview -->
+                    <div id="video-preview-container" class="mt-3" style="display:none;">
+                        <label class="form-label">@T("Plugins.Widgets.Swiper.VideoPreview")</label>
+                        <video id="video-preview" width="400" controls class="border rounded">
+                            <source src="" type="video/mp4" />
+                            @T("Plugins.Widgets.Swiper.VideoNotSupported")
+                        </video>
+                        <div class="mt-2">
+                            <button type="button" class="btn btn-sm btn-secondary" id="btn-replace-video">
+                                <i class="fas fa-sync"></i> @T("Plugins.Widgets.Swiper.ReplaceVideo")
+                            </button>
+                            <button type="button" class="btn btn-sm btn-danger" id="btn-remove-video">
+                                <i class="fas fa-trash"></i> @T("Plugins.Widgets.Swiper.RemoveVideo")
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="form-group row">
+                <div class="col-md-3">
+                    <nop-label asp-for="PosterPictureId" />
+                </div>
+                <div class="col-md-9">
+                    <nop-editor asp-for="PosterPictureId" asp-template="Picture" />
+                    <span asp-validation-for="PosterPictureId"></span>
+                    <small class="form-text text-muted">@T("Plugins.Widgets.Swiper.PosterPictureId.Hint")</small>
+                </div>
+            </div>
+            
+            <div class="form-group row">
+                <div class="col-md-3">
+                    <nop-label asp-for="VideoAutoplay" />
+                </div>
+                <div class="col-md-9">
+                    <nop-editor asp-for="VideoAutoplay" />
+                    <span asp-validation-for="VideoAutoplay"></span>
+                    <small class="form-text text-muted">@T("Plugins.Widgets.Swiper.VideoAutoplay.Hint")</small>
+                </div>
+            </div>
+            
+            <div class="form-group row">
+                <div class="col-md-3">
+                    <nop-label asp-for="VideoMuted" />
+                </div>
+                <div class="col-md-9">
+                    <nop-editor asp-for="VideoMuted" />
+                    <span asp-validation-for="VideoMuted"></span>
+                    <small class="form-text text-muted">@T("Plugins.Widgets.Swiper.VideoMuted.Hint")</small>
+                </div>
+            </div>
+            
+            <div class="form-group row">
+                <div class="col-md-3">
+                    <nop-label asp-for="VideoLoop" />
+                </div>
+                <div class="col-md-9">
+                    <nop-editor asp-for="VideoLoop" />
+                    <span asp-validation-for="VideoLoop"></span>
+                </div>
+            </div>
+            
+            <div class="form-group row">
+                <div class="col-md-3">
+                    <nop-label asp-for="VideoControls" />
+                </div>
+                <div class="col-md-9">
+                    <nop-editor asp-for="VideoControls" />
+                    <span asp-validation-for="VideoControls"></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- External Video URL Fields -->
+        <div id="external-video-fields-section" style="display:none;">
+            <div class="form-group row">
+                <div class="col-md-3">
+                    <nop-label asp-for="ExternalVideoUrl" />
+                </div>
+                <div class="col-md-9">
+                    <nop-editor asp-for="ExternalVideoUrl" />
+                    <span asp-validation-for="ExternalVideoUrl"></span>
+                    <small class="form-text text-muted">@T("Plugins.Widgets.Swiper.ExternalVideoUrl.Hint")</small>
+                </div>
+            </div>
+            
+            <div class="form-group row">
+                <div class="col-md-3">
+                    <nop-label asp-for="PosterPictureId" />
+                </div>
+                <div class="col-md-9">
+                    <nop-editor asp-for="PosterPictureId" asp-template="Picture" />
+                    <span asp-validation-for="PosterPictureId"></span>
+                </div>
+            </div>
+            
+            <div class="form-group row">
+                <div class="col-md-3">
+                    <nop-label asp-for="VideoAutoplay" />
+                </div>
+                <div class="col-md-9">
+                    <nop-editor asp-for="VideoAutoplay" />
+                    <span asp-validation-for="VideoAutoplay"></span>
+                </div>
+            </div>
+            
+            <div class="form-group row">
+                <div class="col-md-3">
+                    <nop-label asp-for="VideoMuted" />
+                </div>
+                <div class="col-md-9">
+                    <nop-editor asp-for="VideoMuted" />
+                    <span asp-validation-for="VideoMuted"></span>
+                </div>
+            </div>
+            
+            <div class="form-group row">
+                <div class="col-md-3">
+                    <nop-label asp-for="VideoLoop" />
+                </div>
+                <div class="col-md-9">
+                    <nop-editor asp-for="VideoLoop" />
+                    <span asp-validation-for="VideoLoop"></span>
+                </div>
+            </div>
+            
+            <div class="form-group row">
+                <div class="col-md-3">
+                    <nop-label asp-for="VideoControls" />
+                </div>
+                <div class="col-md-9">
+                    <nop-editor asp-for="VideoControls" />
+                    <span asp-validation-for="VideoControls"></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Common Fields -->
         <div class="form-group row">
             <div class="col-md-3">
                 <nop-label asp-for="TitleText" />
@@ -23,15 +242,18 @@
                 <span asp-validation-for="TitleText"></span>
             </div>
         </div>
+        
         <div class="form-group row">
             <div class="col-md-3">
-                <nop-label asp-for="AltText" />
+                <nop-label asp-for="Description" />
             </div>
             <div class="col-md-9">
-                <nop-editor asp-for="AltText" />
-                <span asp-validation-for="AltText"></span>
+                <nop-textarea asp-for="Description" rows="3" />
+                <span asp-validation-for="Description"></span>
+                <small class="form-text text-muted">@T("Plugins.Widgets.Swiper.Description.Hint")</small>
             </div>
         </div>
+        
         <div class="form-group row">
             <div class="col-md-3">
                 <nop-label asp-for="LinkUrl" />
@@ -41,6 +263,93 @@
                 <span asp-validation-for="LinkUrl"></span>
             </div>
         </div>
+
+        <!-- Hero Format Fields -->
+        <div id="hero-fields-section" style="display:none;">
+            <div class="form-group row">
+                <div class="col-md-3">
+                    <nop-label asp-for="Heading" />
+                </div>
+                <div class="col-md-9">
+                    <nop-editor asp-for="Heading" />
+                    <span asp-validation-for="Heading"></span>
+                    <small class="form-text text-muted">@T("Plugins.Widgets.Swiper.Heading.Hint")</small>
+                </div>
+            </div>
+            
+            <div class="form-group row">
+                <div class="col-md-3">
+                    <nop-label asp-for="Subtitle" />
+                </div>
+                <div class="col-md-9">
+                    <nop-editor asp-for="Subtitle" />
+                    <span asp-validation-for="Subtitle"></span>
+                </div>
+            </div>
+            
+            <div class="form-group row">
+                <div class="col-md-3">
+                    <nop-label asp-for="CtaText" />
+                </div>
+                <div class="col-md-9">
+                    <nop-editor asp-for="CtaText" />
+                    <span asp-validation-for="CtaText"></span>
+                    <small class="form-text text-muted">@T("Plugins.Widgets.Swiper.CtaText.Hint")</small>
+                </div>
+            </div>
+            
+            <div class="form-group row">
+                <div class="col-md-3">
+                    <nop-label asp-for="CtaUrl" />
+                </div>
+                <div class="col-md-9">
+                    <nop-editor asp-for="CtaUrl" />
+                    <span asp-validation-for="CtaUrl"></span>
+                </div>
+            </div>
+            
+            <div class="form-group row">
+                <div class="col-md-3">
+                    <nop-label asp-for="TextAlignment" />
+                </div>
+                <div class="col-md-9">
+                    <nop-select asp-for="TextAlignment" asp-items="@(new SelectList(new[]
+                    {
+                        new SelectListItem { Text = "Left", Value = "left" },
+                        new SelectListItem { Text = "Center", Value = "center" },
+                        new SelectListItem { Text = "Right", Value = "right" }
+                    }, "Value", "Text", Model.TextAlignment))" />
+                    <span asp-validation-for="TextAlignment"></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Product Mapping Fields -->
+        <div id="product-mapping-section" style="display:none;">
+            <div class="form-group row">
+                <div class="col-md-3">
+                    <nop-label asp-for="ProductId" />
+                </div>
+                <div class="col-md-9">
+                    <div id="productMappingContainer">
+                        <input type="hidden" asp-for="ProductId" id="ProductId" />
+                        <div class="product-mapping-search">
+                            <input type="text" id="productSearch" class="form-control" placeholder="@T("Plugins.Widgets.Swiper.SearchProduct.Placeholder")" />
+                            <div id="productSearchResults" class="search-results" style="max-height:200px;overflow-y:auto;border:1px solid #ddd;margin-top:5px;display:none;"></div>
+                        </div>
+                        <div id="selectedProductInfo" style="margin-top:10px;display:none;">
+                            <div class="alert alert-info">
+                                <strong id="selectedProductName"></strong><br />
+                                <small id="selectedProductSku"></small>
+                            </div>
+                        </div>
+                    </div>
+                    <span asp-validation-for="ProductId"></span>
+                    <small class="form-text text-muted">@T("Plugins.Widgets.Swiper.ProductId.Hint")</small>
+                </div>
+            </div>
+        </div>
+        
         <div class="form-group row">
             <div class="offset-md-3 col-md-9">
                 <button type="submit" name="add-slide" class="btn btn-primary">@T("Plugins.Widgets.Swiper.Slide.Add")</button>
@@ -48,3 +357,202 @@
         </div>
     </div>
 </div>
+
+<script asp-location="Footer">
+    $(document).ready(function () {
+        // Toggle field visibility based on content type and slider format
+        function toggleFields() {
+            var contentType = $('input[name="ContentType"]:checked').val();
+            var sliderFormat = $('#SliderFormat').length > 0 ? $('#SliderFormat').val() : '0';
+            
+            $('#image-fields-section').toggle(contentType == '0');
+            $('#uploaded-video-fields-section').toggle(contentType == '1');
+            $('#external-video-fields-section').toggle(contentType == '2');
+            
+            // Show hero fields for all content types when format is Hero (1)
+            $('#hero-fields-section').toggle(sliderFormat == '1');
+            
+            // Show product mapping fields for Product Carousel (2) or Reels (3) formats
+            $('#product-mapping-section').toggle(sliderFormat == '2' || sliderFormat == '3');
+        }
+        
+        // Initial toggle
+        toggleFields();
+        
+        // On content type change
+        $('input[name="ContentType"]').on('change', function () {
+            toggleFields();
+        });
+        
+        // Listen for slider format changes
+        $(document).on('change', '#SliderFormat', function() {
+            toggleFields();
+        });
+        
+        // Product search functionality
+        var searchTimeout;
+        $('#productSearch').on('input', function() {
+            clearTimeout(searchTimeout);
+            var query = $(this).val().trim();
+            
+            if (query.length < 2) {
+                $('#productSearchResults').hide();
+                return;
+            }
+            
+            searchTimeout = setTimeout(function() {
+                $.ajax({
+                    url: '@Url.Action("ProductSearch", "Product")',
+                    type: 'GET',
+                    data: { query: query, pageNumber: 1, pageSize: 10 },
+                    success: function(response) {
+                        if (response && response.length > 0) {
+                            var html = '';
+                            response.forEach(function(product) {
+                                html += '<div class="product-search-item" style="padding:8px;cursor:pointer;border-bottom:1px solid #eee;" data-productid="' + product.Id + '" data-productname="' + product.Name + '" data-productsku="' + product.Sku + '">' +
+                                    product.Name + ' (' + product.Sku + ')' +
+                                    '</div>';
+                            });
+                            $('#productSearchResults').html(html).show();
+                        } else {
+                            $('#productSearchResults').hide();
+                        }
+                    }
+                });
+            }, 300);
+        });
+        
+        $(document).on('click', '.product-search-item', function() {
+            var productId = $(this).data('productid');
+            var productName = $(this).data('productname');
+            var productSku = $(this).data('productsku');
+            
+            $('#ProductId').val(productId);
+            $('#selectedProductName').text(productName);
+            $('#selectedProductSku').text('SKU: ' + productSku);
+            $('#selectedProductInfo').show();
+            $('#productSearchResults').hide();
+            $('#productSearch').val(productName + ' (' + productSku + ')');
+        });
+        
+        // Hide search results when clicking outside
+        $(document).on('click', function(e) {
+            if (!$(e.target).closest('.product-mapping-search').length) {
+                $('#productSearchResults').hide();
+            }
+        });
+        
+        // Video upload button
+        $('#btn-upload-video').on('click', function () {
+            $('#videoFile').click();
+        });
+        
+        // Replace video button
+        $('#btn-replace-video').on('click', function () {
+            $('#videoFile').click();
+        });
+        
+        // Remove video button
+        $('#btn-remove-video').on('click', function () {
+            $('#VideoUrl').val('');
+            $('#video-preview-container').hide();
+            $('#video-upload-success').hide();
+        });
+        
+        // File input change
+        $('#videoFile').on('change', function () {
+            var file = this.files[0];
+            if (!file) return;
+            
+            // Validate file type
+            var validTypes = ['video/mp4', 'video/webm'];
+            if (validTypes.indexOf(file.type) === -1) {
+                showVideoError('@T("Plugins.Widgets.Swiper.VideoUpload.InvalidType")');
+                return;
+            }
+            
+            // Validate file size (max 50MB)
+            var maxSize = 50 * 1024 * 1024;
+            if (file.size > maxSize) {
+                showVideoError('@T("Plugins.Widgets.Swiper.VideoUpload.FileTooLarge")');
+                return;
+            }
+            
+            // Upload file
+            var formData = new FormData();
+            formData.append('videoFile', file);
+            
+            $('#video-upload-progress').show();
+            $('#video-upload-error').hide();
+            $('#video-upload-success').hide();
+            
+            $.ajax({
+                url: '@Url.Action("UploadVideo", "WidgetSwiper")',
+                type: 'POST',
+                data: formData,
+                processData: false,
+                contentType: false,
+                success: function (res) {
+                    $('#video-upload-progress').hide();
+                    if (res.success) {
+                        $('#VideoUrl').val(res.url);
+                        updateVideoPreview(res.url);
+                        showVideoSuccess('@T("Plugins.Widgets.Swiper.VideoUpload.Success")');
+                    } else {
+                        showVideoError(res.message || '@T("Plugins.Widgets.Swiper.VideoUpload.Failed")');
+                    }
+                },
+                error: function () {
+                    $('#video-upload-progress').hide();
+                    showVideoError('@T("Plugins.Widgets.Swiper.VideoUpload.Error")');
+                }
+            });
+        });
+        
+        function updateVideoPreview(url) {
+            if (url) {
+                $('#video-preview source').attr('src', url);
+                $('#video-preview')[0].load();
+                $('#video-preview-container').show();
+            } else {
+                $('#video-preview-container').hide();
+            }
+        }
+        
+        function showVideoError(msg) {
+            $('#video-upload-error').text(msg).show();
+        }
+        
+        function showVideoSuccess(msg) {
+            $('#video-upload-success').text(msg).show();
+            setTimeout(function () {
+                $('#video-upload-success').fadeOut();
+            }, 5000);
+        }
+        
+        // Show existing video preview on page load
+        var existingVideoUrl = $('#VideoUrl').val();
+        if (existingVideoUrl) {
+            updateVideoPreview(existingVideoUrl);
+        }
+        
+        // Show existing product info on page load
+        var existingProductId = $('#ProductId').val();
+        if (existingProductId > 0) {
+            // Load product info via AJAX if needed
+            $.ajax({
+                url: '@Url.Action("GetProductById", "Product")',
+                type: 'GET',
+                data: { productId: existingProductId },
+                success: function(product) {
+                    if (product) {
+                        $('#selectedProductName').text(product.Name);
+                        $('#selectedProductSku').text('SKU: ' + product.Sku);
+                        $('#selectedProductInfo').show();
+                        $('#productSearch').val(product.Name + ' (' + product.Sku + ')');
+                    }
+                }
+            });
+        }
+    });
+</script>
